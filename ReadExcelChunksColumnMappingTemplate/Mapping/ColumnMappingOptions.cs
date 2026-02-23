@@ -13,6 +13,7 @@ namespace LoanReadExcelChunksFuncApp.Mapping
         /// </summary>
         public class ColumnMappingOptions
         {
+            public string ActiveTemplateName { get; set; }
             /// <summary>TemplateName → TemplateDefinition</summary>
             public Dictionary<string, TemplateDefinition> Templates { get; set; }
                 = new Dictionary<string, TemplateDefinition>();

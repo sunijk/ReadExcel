@@ -8,18 +8,6 @@ using System.Reflection;
 
 namespace LoanReadExcelChunksFuncApp.Mapping
 {
-    /// <summary>
-    /// Loads a single column-mapping template from the Templates folder.
-    ///
-    /// Which template to load is controlled by the "CurrentTemplate" environment
-    /// variable / app setting (e.g. "Template1" or "Template2").
-    ///
-    /// File resolution order for the Templates folder (first existing path wins):
-    ///   1. TEMPLATE_FOLDER_PATH environment variable
-    ///   2. Templates\ next to the executing assembly   (bin\Debug\net48\Templates)
-    ///   3. Templates\ in the project root              (walks up looking for *.csproj)
-    ///   4. Templates\ in the current working directory
-    /// </summary>
     public static class TemplateLoader
     {
         private const string FolderName = "Templates";
@@ -35,24 +23,15 @@ namespace LoanReadExcelChunksFuncApp.Mapping
             NullValueHandling = NullValueHandling.Ignore
         };
 
-        // ----------------------------------------------------------------
-        // Public API
-        // ----------------------------------------------------------------
-
-        /// <summary>
-        /// Reads the "CurrentTemplate" app setting, finds the matching JSON file
-        /// in the Templates folder, and returns a <see cref="ColumnMappingOptions"/>
-        /// that contains exactly that one template.
-        /// </summary>
         public static ColumnMappingOptions Load()
         {
-            // 1. Which template should be loaded?
+            // 1. Which template?
             string templateName = Environment.GetEnvironmentVariable(CurrentTemplateKey);
 
             if (string.IsNullOrWhiteSpace(templateName))
                 throw new InvalidOperationException(
                     $"The '{CurrentTemplateKey}' app setting is not set.\n" +
-                    $"Add it to local.settings.json:\n" +
+                    $"Add it to local.settings.json Values:\n" +
                     $"  \"CurrentTemplate\": \"Template1\"");
 
             // 2. Where is the Templates folder?
@@ -62,17 +41,13 @@ namespace LoanReadExcelChunksFuncApp.Mapping
             if (!Directory.Exists(folder))
                 throw new DirectoryNotFoundException(
                     $"Templates folder not found.\n" +
-                    $"  Candidates tried:\n{FormatCandidates()}\n" +
-                    $"  Quick fix: add \"TEMPLATE_FOLDER_PATH\": \"<absolute path>\" " +
-                    $"to local.settings.json Values.");
+                    $"Candidates tried:\n{FormatCandidates()}\n" +
+                    $"Add \"TEMPLATE_FOLDER_PATH\": \"<absolute path>\" to local.settings.json.");
 
-            // 3. Find the JSON file whose TemplateName matches
+            // 3. Load the matching template file
             return LoadTemplate(folder, templateName);
         }
 
-        /// <summary>
-        /// Load from an explicit folder — used by unit tests.
-        /// </summary>
         public static ColumnMappingOptions LoadFromFolder(string folder, string templateName)
         {
             if (!Directory.Exists(folder))
@@ -87,47 +62,49 @@ namespace LoanReadExcelChunksFuncApp.Mapping
 
         private static ColumnMappingOptions LoadTemplate(string folder, string templateName)
         {
-            // Try the obvious filename first  (Template1.json, Template2.json …)
+            // Try exact filename first: Template1.json
             string expectedFile = Path.Combine(folder, $"{templateName}.json");
 
             if (File.Exists(expectedFile))
             {
                 var def = DeserialiseAndValidate(expectedFile, templateName);
-                return WrapInOptions(def);
+                return WrapInOptions(def, templateName);
             }
 
-            // Fall back: scan all *.json files looking for matching TemplateName field
+            // Fall back: scan all *.json files for matching TemplateName field
             foreach (string filePath in Directory.GetFiles(folder, "*.json"))
             {
-                TemplateDefinition candidate = TryDeserialise(filePath);
+                var candidate = TryDeserialise(filePath);
                 if (candidate != null &&
                     string.Equals(candidate.TemplateName, templateName,
                                   StringComparison.OrdinalIgnoreCase))
                 {
                     ValidateDefinition(candidate, filePath);
-                    return WrapInOptions(candidate);
+                    return WrapInOptions(candidate, templateName);
                 }
             }
 
-            // Nothing matched
             throw new InvalidOperationException(
                 $"No template named '{templateName}' found in '{folder}'.\n" +
-                $"  Files present: {string.Join(", ", Directory.GetFiles(folder, "*.json"))}\n" +
-                $"  Check the 'CurrentTemplate' setting matches the 'TemplateName' " +
-                $"field inside one of the JSON files.");
+                $"Files present: {string.Join(", ", Directory.GetFiles(folder, "*.json"))}\n" +
+                $"Check 'CurrentTemplate' matches the 'TemplateName' field in one of the JSON files.");
         }
 
-        private static ColumnMappingOptions WrapInOptions(TemplateDefinition def)
+        private static ColumnMappingOptions WrapInOptions(
+            TemplateDefinition def, string templateName)
         {
             LoadedTemplateName = def.TemplateName;
 
-            var options = new ColumnMappingOptions();
+            var options = new ColumnMappingOptions
+            {
+                ActiveTemplateName = def.TemplateName   // ← tells ExcelReaderService which one to use
+            };
             options.Templates[def.TemplateName] = def;
             return options;
         }
 
         // ----------------------------------------------------------------
-        // Deserialisation helpers
+        // Deserialisation
         // ----------------------------------------------------------------
 
         private static TemplateDefinition DeserialiseAndValidate(
@@ -142,9 +119,9 @@ namespace LoanReadExcelChunksFuncApp.Mapping
             if (!string.Equals(def.TemplateName, expectedName,
                                 StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(
-                    $"File '{filePath}' contains TemplateName '{def.TemplateName}' " +
-                    $"but CurrentTemplate is set to '{expectedName}'. " +
-                    $"Check the TemplateName field inside the JSON file.");
+                    $"File '{filePath}' has TemplateName='{def.TemplateName}' " +
+                    $"but CurrentTemplate='{expectedName}'. " +
+                    $"Fix the TemplateName field inside the JSON file.");
 
             return def;
         }
@@ -158,12 +135,12 @@ namespace LoanReadExcelChunksFuncApp.Mapping
 
                 if (def?.Mapping == null || def.Mapping.Count == 0)
                     throw new InvalidOperationException(
-                        $"Template '{def?.TemplateName ?? filePath}' has no column mappings.\n\n" +
-                        $"  The JSON was read but 'Mapping' is empty. Common causes:\n" +
-                        $"    1) Key is not exactly \"Mapping\" (capital M)\n" +
-                        $"    2) File was not saved after editing — check your editor\n" +
-                        $"    3) BOM/encoding issue — save as UTF-8 without BOM\n\n" +
-                        $"  Raw JSON:\n{raw}");
+                        $"Template '{def?.TemplateName ?? filePath}' Mapping is empty.\n" +
+                        $"Common causes:\n" +
+                        $"  1) Key is not exactly \"Mapping\" (capital M)\n" +
+                        $"  2) File not saved after editing\n" +
+                        $"  3) BOM/encoding — save as UTF-8 without BOM\n\n" +
+                        $"Raw JSON:\n{raw}");
 
                 return def;
             }
@@ -193,7 +170,6 @@ namespace LoanReadExcelChunksFuncApp.Mapping
         {
             var candidates = new List<string>();
 
-            // 1. Explicit env var
             string env = Environment.GetEnvironmentVariable("TEMPLATE_FOLDER_PATH");
             if (!string.IsNullOrWhiteSpace(env))
             {
@@ -202,7 +178,6 @@ namespace LoanReadExcelChunksFuncApp.Mapping
                 return env;
             }
 
-            // 2. Next to the executing assembly
             string asmDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string asmCandidate = Path.Combine(asmDir, FolderName);
             if (Directory.Exists(asmCandidate))
@@ -213,7 +188,6 @@ namespace LoanReadExcelChunksFuncApp.Mapping
             }
             candidates.Add($"[Assembly] {asmCandidate}  (not found)");
 
-            // 3. Project root
             string projectRoot = FindProjectRoot(AppDomain.CurrentDomain.BaseDirectory);
             if (projectRoot != null)
             {
@@ -227,7 +201,6 @@ namespace LoanReadExcelChunksFuncApp.Mapping
                 candidates.Add($"[Project]  {projCandidate}  (not found)");
             }
 
-            // 4. Current working directory
             string cwdCandidate = Path.Combine(Directory.GetCurrentDirectory(), FolderName);
             if (Directory.Exists(cwdCandidate))
             {
@@ -238,7 +211,7 @@ namespace LoanReadExcelChunksFuncApp.Mapping
             candidates.Add($"[CWD]      {cwdCandidate}  (not found)");
 
             CandidatePaths = candidates;
-            return asmCandidate; // most likely intended path for the error message
+            return asmCandidate;
         }
 
         private static string FindProjectRoot(string startDir)

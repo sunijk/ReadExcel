@@ -1,0 +1,33 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "TEMPLATE_FOLDER_PATH": "C:\\Users\\sunij\\Desktop\\EBRD-POC\\ReadExcel2\\ReadExcelChunksColumnMappingTemplate\\Templates",
+    "CurrentTemplate": "Template1"
+    //// common columns mapping
+    //"ColumnMapping:PrimaryVGD": "Primary VGD",
+    //"ColumnMapping:IFRS9Stage": "IFRS 9 Stage",
+    //"ColumnMapping:PRSSubLimit": "PRS Sub-Limit",
+    //"ColumnMapping:TypeOfCreditInstrument": "Type of Credit Instrument",
+
+    //// Template A
+    //"ColumnMapping:TemplateA:PrimaryVGD": "Primary VGD",
+    //"ColumnMapping:TemplateA:IFRS9Stage": "IFRS 9 Stage",
+    //"ColumnMapping:TemplateA:PRSSubLimit": "PRS Sub-Limit",
+    //"ColumnMapping:TemplateA:TypeOfCreditInstrument": "Type of Credit Instrument",
+
+    // Template B
+    //"ColumnMapping:TemplateB:PrimaryVGD": "Primary VGD",
+    //"ColumnMapping:TemplateB:IFRS9Stage": "IFRS 9 Stage"
+    //"ColumnMapping:TemplateB:PRSSubLimit": "Sub Limit"
+  }
+
+  // used inn .net 6
+  //"ColumnMapping": {
+  //    "PrimaryVGD": "Primary VGD",
+  //    "IFRS9Stage": "IFRS 9 Stage",
+  //    "PRSSubLimit": "PRS Sub-Limit",
+  //    "TypeOfCreditInstrument": "Type of Credit Instrument"
+  //}
+}

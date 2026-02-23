@@ -1,12 +1,7 @@
 ﻿using LoanReadExcelChunksFuncApp.ValidationRuleEngine.Interface;
-using LoanReadExcelChunksFuncApp.ValidationRuleEngine.ValidationRules;
-using LoanReadExcelChunksFuncApp.ValidationRules.ValidationRules;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LoanReadExcelChunksFuncApp.ValidationRules
 {
@@ -19,46 +14,34 @@ namespace LoanReadExcelChunksFuncApp.ValidationRules
             this.allRules = allRules;
         }
 
-        public List<ISubLoanRule> GetActiveValidationRules(Dictionary<string, string> columnMapping)
+        /// <summary>
+        /// Returns only the rules whose TargetProperty exists as a key
+        /// in the active template's Mapping dictionary.
+        ///
+        /// e.g. Template2 has no "TypeOfCreditInstrument" key so
+        /// CreditInstrumentRequiredRule is excluded automatically.
+        /// </summary>
+        public List<ISubLoanRule> GetActiveValidationRules(
+            Dictionary<string, string> columnMapping)
         {
-            var activeProperties = new HashSet<string>(columnMapping.Keys,
-                StringComparer.OrdinalIgnoreCase);
-            var rules= allRules
+            var activeProperties = new HashSet<string>(
+                columnMapping.Keys, StringComparer.OrdinalIgnoreCase);
+
+#if DEBUG
+            // Uncomment to diagnose rule filtering in the Output/Debug window
+            foreach (var key in columnMapping.Keys)
+                System.Diagnostics.Debug.WriteLine($"[Template key]     {key}");
+
+            foreach (var rule in allRules)
+                System.Diagnostics.Debug.WriteLine($"[Rule target]      {rule.TargetProperty}");
+#endif
+
+            var rules = allRules
                 .Where(r => activeProperties.Contains(r.TargetProperty))
                 .ToList();
-
-            //foreach (var key in columnMapping.Keys)
-            //{
-            //    System.Diagnostics.Debug.WriteLine("Mapping key: " + key);
-            //}
-
-            //foreach (var rule in allRules)
-            //{
-            //    System.Diagnostics.Debug.WriteLine("Rule TargetProperty: " + rule.TargetProperty);
-            //}
-
             return allRules
                 .Where(r => activeProperties.Contains(r.TargetProperty))
                 .ToList();
         }
     }
 }
-
-//public SubLoanRuleFactory(IServiceProvider serviceProvider)
-//{
-//    _serviceProvider = serviceProvider;
-//}
-
-//public IEnumerable<ISubLoanRule> CreateRules()
-//{
-//    return new List<ISubLoanRule>
-//{
-//    _serviceProvider.GetRequiredService<PrimaryVgdRequiredRule>(),
-//    _serviceProvider.GetRequiredService<Ifrs9StageRequiredRule>(),
-//   _serviceProvider.GetRequiredService<CreditInstrumentRequiredRule>(),
-//    _serviceProvider.GetRequiredService<PrsSubLimitRule>(),
-//    _serviceProvider.GetRequiredService<LoanDateRule>()
-//};
-//}
-
-

@@ -13,15 +13,10 @@ namespace LoanReadExcelChunksFuncApp.Services
 {
     public class ExcelReaderService : IExcelReaderService
     {
-        private readonly IMainLoanValidationService _mainValidation;
-        private readonly ISubLoanValidationService _subValidation;
-        private readonly IExcelRowAdapter _adapter;
-        private readonly Dictionary<string, string> _activeMapping;
-        private readonly string _activeTemplateName;
-
-        // How many consecutive blank rows before we treat the data as finished.
-        // Handles cases where rows have formatting but no data.
-        private const int MaxConsecutiveBlankRows = 5;
+        private readonly IMainLoanValidationService mainValidation;
+        private readonly ISubLoanValidationService subValidation;
+        private readonly IExcelRowAdapter adapter;
+        private readonly ColumnMappingOptions columnMappingOptions;
 
         public ExcelReaderService(
             IMainLoanValidationService mainValidation,
@@ -29,22 +24,11 @@ namespace LoanReadExcelChunksFuncApp.Services
             IExcelRowAdapter adapter,
             ColumnMappingOptions columnMappingOptions)
         {
-            _mainValidation = mainValidation;
-            _subValidation = subValidation;
-            _adapter = adapter;
-
-            if (columnMappingOptions.Templates.Count == 0)
-                throw new InvalidOperationException(
-                    "No templates loaded. Check TemplateLoader ran correctly at startup.");
-
-            var template = columnMappingOptions.Templates.Values.First();
-            _activeTemplateName = template.TemplateName;
-            _activeMapping = template.Mapping;
+            this.mainValidation = mainValidation;
+            this.subValidation = subValidation;
+            this.adapter = adapter;
+            this.columnMappingOptions = columnMappingOptions;
         }
-
-        // ----------------------------------------------------------------
-        // Public API
-        // ----------------------------------------------------------------
 
         public ExcelReadResult ReadExcel(string filePath)
         {
@@ -61,175 +45,131 @@ namespace LoanReadExcelChunksFuncApp.Services
 
             var result = new ExcelReadResult();
             var borrowers = new List<SubBorrowerDetail>();
-            var chunk = new List<SubBorrowerDetail>();
 
             using (var reader = ExcelReaderFactory.CreateReader(stream))
             {
                 int rowIndex = 0;
                 int headerRowIndex = -1;
-                int consecutiveBlanks = 0;
 
-                Dictionary<string, int> columnIndexes = null;
+                var columnIndexes = new Dictionary<string, int>();
+
+                // The Mapping section from the matched template
+                // (model property name → Excel column header)
+                Dictionary<string, string> templateMapping = null;
+
+                var chunk = new List<SubBorrowerDetail>();
 
                 while (reader.Read())
                 {
-                    // --------------------------------------------------
-                    // Phase 1: find the header row
-                    // --------------------------------------------------
+                    // --------------------------------------------------------
+                    // Phase 1: scan rows until the header row is found
+                    // --------------------------------------------------------
                     if (headerRowIndex == -1)
                     {
-                        if (TryDetectHeaderRow(reader, out columnIndexes))
-                            headerRowIndex = rowIndex;
+                        bool headerFound = false;
 
-                        rowIndex++;
-                        continue;
+                        for (int i = 0; i < reader.FieldCount; i++)
+                        {
+                            var cell = reader.GetValue(i)?.ToString();
+
+                            // Look for the Excel column header that the active
+                            // template maps to "PrimaryVGD"
+                            if (!columnMappingOptions.Templates.TryGetValue(
+                                    columnMappingOptions.ActiveTemplateName,
+                                    out var activeDef))
+                                throw new InvalidOperationException(
+                                    $"Active template '{columnMappingOptions.ActiveTemplateName}' not found.");
+
+                            activeDef.Mapping.TryGetValue("PrimaryVGD", out string primaryVgdHeader);
+
+                            if (Normalize(cell) == Normalize(primaryVgdHeader))
+                            {
+                                headerRowIndex = rowIndex;
+                                columnIndexes = BuildColumnIndex(reader);
+                                headerFound = true;
+                                break;
+                            }
+                        }
+
+                        if (headerFound)
+                        {
+                            // Use the active template directly — no detection needed
+                            var def = columnMappingOptions.Templates[
+                                          columnMappingOptions.ActiveTemplateName];
+                            templateMapping = def.Mapping;
+                        }
                     }
-
-                    // --------------------------------------------------
-                    // Phase 2: read data rows
-                    // --------------------------------------------------
-
-                    // Check whether the entire row is blank
-                    bool rowIsBlank = IsRowBlank(reader);
-
-                    if (rowIsBlank)
+                    // --------------------------------------------------------
+                    // Phase 2: map and collect data rows  (your original logic)
+                    // --------------------------------------------------------
+                    else
                     {
-                        consecutiveBlanks++;
+                        var rowDict = new Dictionary<string, object>();
 
-                        // Stop reading after N consecutive blank rows —
-                        // this is the end of real data in the sheet.
-                        if (consecutiveBlanks >= MaxConsecutiveBlankRows)
-                            break;
+                        foreach (var kv in columnIndexes)
+                            rowDict[kv.Key] = reader.GetValue(kv.Value);
 
-                        rowIndex++;
-                        continue;
-                    }
+                        var detail = adapter.Map(rowDict, templateMapping);
+                        chunk.Add(detail);
 
-                    // Row has data — reset blank counter
-                    consecutiveBlanks = 0;
-
-                    var rowDict = BuildRowDictionary(reader, columnIndexes);
-                    var detail = _adapter.Map(rowDict, _activeMapping);
-                    chunk.Add(detail);
-
-                    // Flush chunk when size reached
-                    if (chunk.Count >= chunkSize)
-                    {
-                        _subValidation.Validate(chunk, result.Validation, _activeMapping);
-                        borrowers.AddRange(chunk);
-                        chunk.Clear();
+                        if (chunk.Count >= chunkSize)
+                        {
+                            subValidation.Validate(chunk, result.Validation, templateMapping);
+                            borrowers.AddRange(chunk);
+                            chunk.Clear();
+                        }
                     }
 
                     rowIndex++;
                 }
 
-                // Flush remaining rows that didn't fill a full chunk
+                // Flush remaining rows
                 if (chunk.Count > 0)
                 {
-                    _subValidation.Validate(chunk, result.Validation, _activeMapping);
+                    subValidation.Validate(chunk, result.Validation, templateMapping);
                     borrowers.AddRange(chunk);
                 }
+
+                result.Borrowers = borrowers;
             }
 
-            result.Borrowers = borrowers;
             return result;
         }
 
         // ----------------------------------------------------------------
-        // Blank row detection
+        // Helpers  (unchanged from your original)
         // ----------------------------------------------------------------
 
-        /// <summary>
-        /// Returns true if every cell in the current reader row is null or whitespace.
-        /// Checks all columns so a row with data only in later columns is not skipped.
-        /// </summary>
-        private static bool IsRowBlank(IExcelDataReader reader)
+        private Dictionary<string, int> BuildColumnIndex(IExcelDataReader reader)
         {
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                var val = reader.GetValue(i)?.ToString();
-                if (!string.IsNullOrWhiteSpace(val))
-                    return false;
-            }
-            return true;
-        }
-
-        // ----------------------------------------------------------------
-        // Header detection
-        // ----------------------------------------------------------------
-
-        private bool TryDetectHeaderRow(
-            IExcelDataReader reader,
-            out Dictionary<string, int> columnIndexes)
-        {
-            columnIndexes = null;
-
-            if (!_activeMapping.TryGetValue("PrimaryVGD", out string expectedHeader))
-                throw new InvalidOperationException(
-                    $"Template '{_activeTemplateName}' has no mapping for 'PrimaryVGD'.");
+            var indexes = new Dictionary<string, int>();
 
             for (int i = 0; i < reader.FieldCount; i++)
             {
-                string cell = reader.GetValue(i)?.ToString();
-                if (Normalize(cell) == Normalize(expectedHeader))
-                {
-                    columnIndexes = BuildColumnIndex(reader);
-                    return true;
-                }
+                var header = reader.GetValue(i)?.ToString();
+                if (!string.IsNullOrWhiteSpace(header))
+                    indexes[header.Trim()] = i;
             }
 
-            return false;
-        }
-
-        // ----------------------------------------------------------------
-        // Row helpers
-        // ----------------------------------------------------------------
-
-        private static Dictionary<string, int> BuildColumnIndex(IExcelDataReader reader)
-        {
-            var indexes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                string header = reader.GetValue(i)?.ToString()?.Trim();
-                if (!string.IsNullOrEmpty(header) && !indexes.ContainsKey(header))
-                    indexes[header] = i;
-            }
             return indexes;
         }
 
-        private static Dictionary<string, object> BuildRowDictionary(
-            IExcelDataReader reader,
-            Dictionary<string, int> columnIndexes)
+        private string Normalize(string value)
         {
-            var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kv in columnIndexes)
-                dict[kv.Key] = reader.GetValue(kv.Value);
-            return dict;
-        }
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
 
-        // ----------------------------------------------------------------
-        // Normaliser
-        // ----------------------------------------------------------------
+            var normalized = value
+                .Replace("\r", " ")
+                .Replace("\n", " ")
+                .Replace("\t", " ")
+                .Replace("\u00A0", " ")
+                .Trim();
 
-        private static string Normalize(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+            while (normalized.Contains("  "))
+                normalized = normalized.Replace("  ", " ");
 
-            var sb = new StringBuilder(value.Length);
-            bool lastSpace = false;
-            foreach (char c in value)
-            {
-                if (c == '\r' || c == '\n' || c == '\t' || c == '\u00A0' || c == ' ')
-                {
-                    if (!lastSpace) { sb.Append(' '); lastSpace = true; }
-                }
-                else
-                {
-                    sb.Append(char.ToLowerInvariant(c));
-                    lastSpace = false;
-                }
-            }
-            return sb.ToString().Trim();
+            return normalized.ToLowerInvariant();
         }
     }
 }

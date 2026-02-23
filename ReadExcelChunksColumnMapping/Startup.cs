@@ -35,15 +35,15 @@ namespace ReadExcelChunksFuncColumnMapping
             var mapping = new Dictionary<string, string>();
 
             config.GetSection("ColumnMapping").Bind(mapping);
-
-            builder.Services.AddSingleton<IExcelRowAdapter>(
-                new ConfigDrivenAdapter(mapping));
-
-
             //// Register options
             builder.Services.AddSingleton(options);
             //// Register options
             builder.Services.AddSingleton(mapping);
+            builder.Services.AddSingleton<IExcelRowAdapter>(
+                new ConfigDrivenAdapter(mapping));
+
+
+       
 
             // Register adapter
             builder.Services.AddSingleton<IExcelRowAdapter, ConfigDrivenAdapter>();

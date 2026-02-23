@@ -1,0 +1,18 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "ColumnMapping:PrimaryVGD": "Primary VGD",
+    "ColumnMapping:IFRS9Stage": "IFRS 9 Stage",
+    "ColumnMapping:PRSSubLimit": "PRS Sub-Limit",
+    "ColumnMapping:TypeOfCreditInstrument": "Type of Credit Instrument"
+  }
+  // used inn .net 6
+  //"ColumnMapping": {
+  //    "PrimaryVGD": "Primary VGD",
+  //    "IFRS9Stage": "IFRS 9 Stage",
+  //    "PRSSubLimit": "PRS Sub-Limit",
+  //    "TypeOfCreditInstrument": "Type of Credit Instrument"
+  //}
+}
