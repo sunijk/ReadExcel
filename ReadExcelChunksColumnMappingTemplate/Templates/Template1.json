@@ -1,0 +1,12 @@
+{
+  "TemplateName": "Template1",
+  "Description": "Template",
+  "Mapping": {
+    "PrimaryVGD": "Primary VGD",
+    "IFRS9Stage": "IFRS 9 Stage",
+    "TypeOfCreditInstrument": "Type of Credit Instrument",
+    "PRSSubLimit": "PRS Sub-Limit",
+    "LoanStartDate": "Loan Start Date",
+    "LoanEndDate": "Loan End Date"
+  }
+}

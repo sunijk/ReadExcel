@@ -1,0 +1,9 @@
+{
+  "TemplateName": "Template2",
+  "Description": "template2",
+  "Mapping": {
+    "PrimaryVGD": "Primary VGD",
+    "IFRS9Stage": "IFRS 9 Stage",
+    "PRSSubLimit": "Sub Limit"
+    }
+}

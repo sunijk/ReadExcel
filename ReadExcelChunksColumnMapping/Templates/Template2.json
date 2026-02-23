@@ -1,0 +1,12 @@
+{
+  "TemplateName": "Template2",
+  "Description": "Alternative Loan Reporting Template with abbreviated column names",
+  "Mapping": {
+    "PrimaryVGD": "Primary VGD",
+    "IFRS9Stage": "IFRS 9 Stage",
+    "TypeOfCreditInstrument": "Instrument Type",
+    "PRSSubLimit": "Sub Limit",
+    "LoanStartDate": "Start Date",
+    "LoanEndDate": "End Date"
+  }
+}

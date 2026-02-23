@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35707.178
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadExcelcFunctionApp", "ReadExcelFunctionApp\ReadExcelcFunctionApp.csproj", "{A79901AB-FF27-4B6A-BB47-234CBC73E1B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadExcelChunksFuncApp", "ReadExcelChunksFuncApp\ReadExcelChunksFuncApp.csproj", "{42D2869C-0093-45EC-BCAF-33C3241851A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadExcelDurableFuncApp", "ReadExcelChunksDurableFuncApp\ReadExcelDurableFuncApp.csproj", "{FA53B0D5-12B4-4E38-AD22-94BD7D7AFBA7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadExcelChunksFuncColumnMapping", "ReadExcelChunksColumnMapping\ReadExcelChunksFuncColumnMapping.csproj", "{03D5CEAC-EF2A-4175-A7D6-981EFF60425C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReadExcelChunksFuncColumnMappingTemplate", "ReadExcelChunksColumnMappingTemplate\ReadExcelChunksFuncColumnMappingTemplate.csproj", "{28954C8E-A59F-4D94-9D19-5BB572B526B7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A79901AB-FF27-4B6A-BB47-234CBC73E1B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A79901AB-FF27-4B6A-BB47-234CBC73E1B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A79901AB-FF27-4B6A-BB47-234CBC73E1B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A79901AB-FF27-4B6A-BB47-234CBC73E1B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42D2869C-0093-45EC-BCAF-33C3241851A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42D2869C-0093-45EC-BCAF-33C3241851A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42D2869C-0093-45EC-BCAF-33C3241851A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42D2869C-0093-45EC-BCAF-33C3241851A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA53B0D5-12B4-4E38-AD22-94BD7D7AFBA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA53B0D5-12B4-4E38-AD22-94BD7D7AFBA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA53B0D5-12B4-4E38-AD22-94BD7D7AFBA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA53B0D5-12B4-4E38-AD22-94BD7D7AFBA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03D5CEAC-EF2A-4175-A7D6-981EFF60425C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03D5CEAC-EF2A-4175-A7D6-981EFF60425C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03D5CEAC-EF2A-4175-A7D6-981EFF60425C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03D5CEAC-EF2A-4175-A7D6-981EFF60425C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28954C8E-A59F-4D94-9D19-5BB572B526B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28954C8E-A59F-4D94-9D19-5BB572B526B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28954C8E-A59F-4D94-9D19-5BB572B526B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28954C8E-A59F-4D94-9D19-5BB572B526B7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
